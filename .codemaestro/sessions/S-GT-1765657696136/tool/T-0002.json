@@ -1,0 +1,10 @@
+{
+  "toolId": "T-0002",
+  "command": "npm test",
+  "cwd": "/workspace/server",
+  "exitCode": 0,
+  "stdout": "\n> codemaestro-server@0.1.0 test\n> node --experimental-vm-modules node_modules/jest/bin/jest.js\n\n",
+  "stderr": "(node:15624) ExperimentalWarning: VM Modules is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:15623) ExperimentalWarning: VM Modules is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nPASS src/__tests__/gt004-demo.test.ts\n(node:15626) ExperimentalWarning: VM Modules is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nPASS src/__tests__/validate.test.ts\nPASS src/__tests__/allowlist.test.ts\nPASS src/__tests__/sessionStore.test.ts\nPASS src/__tests__/replay.test.ts\n\nTest Suites: 5 passed, 5 total\nTests:       9 passed, 9 total\nSnapshots:   0 total\nTime:        1.74 s, estimated 2 s\nRan all test suites.\n",
+  "startedAt": "2025-12-13T20:28:18.260Z",
+  "endedAt": "2025-12-13T20:28:20.348Z"
+}

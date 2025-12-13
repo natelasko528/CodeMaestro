@@ -7,6 +7,7 @@
   "scripts": {
     "build": "tsc",
     "server": "node dist/index.js",
+    "gt": "node ./dist/gtRunner.js",
     "test": "node --experimental-vm-modules node_modules/jest/bin/jest.js",
     "test:watch": "npm test -- --watch",
     "lint": "eslint src --ext .ts",

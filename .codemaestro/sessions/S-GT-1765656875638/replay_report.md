@@ -1,0 +1,24 @@
+# Replay Report
+
+Session: S-GT-1765656875638
+
+## Event type sequence
+
+
+out:STATUS
+in:INIT
+out:STATUS
+in:USER_PROMPT
+out:AGENT_MESSAGE
+out:STATUS
+out:AGENT_MESSAGE
+out:PROPOSE_EDIT
+out:STATUS
+out:STATUS
+in:APPLY_EDIT_RESULT
+out:AGENT_MESSAGE
+out:STATUS
+out:STATUS
+out:TOOL_OUTPUT
+out:AGENT_MESSAGE
+out:STATUS

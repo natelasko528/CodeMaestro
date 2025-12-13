@@ -1,0 +1,27 @@
+openapi: 3.0.3
+info:
+  title: "{{APP_NAME}} API"
+  version: "0.1.0"
+servers:
+  - url: http://localhost:{{PORT}}
+paths:
+  /health:
+    get:
+      summary: Health check
+      responses:
+        "200":
+          description: OK
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+components:
+  schemas:
+    Error:
+      type: object
+      properties:
+        code: { type: string }
+        message: { type: string }

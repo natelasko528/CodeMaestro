@@ -1,0 +1,20 @@
+{
+  "editId": "E-0001",
+  "files": [
+    {
+      "filePath": ".codemaestro/scratch/S-GT-1765657445815/note-a.txt",
+      "beforeHash": null,
+      "afterHash": "e3be2907fbf9eedc5f5d2c05d5bc270271f039cc43b003d47095a68f9d873686"
+    },
+    {
+      "filePath": ".codemaestro/scratch/S-GT-1765657445815/note-b.txt",
+      "beforeHash": null,
+      "afterHash": "d1bc08a966a639c881935383cd1552bd4fdd027877d3fa1c24668102bb92990f"
+    },
+    {
+      "filePath": "server/src/__tests__/gt004-demo.test.ts",
+      "beforeHash": "92e5cb4a68dfacd00983c21abcffdab15ac0e79d728a25ebd80d2691597ca205",
+      "afterHash": "a6f48007dff05a30167fbb4b5bb864b44ca3e770991d2d1bb0c1da6d2e145172"
+    }
+  ]
+}

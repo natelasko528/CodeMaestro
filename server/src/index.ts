@@ -72,7 +72,12 @@ async function main(): Promise<void> {
       const workspaceRoot = inferWorkspaceRoot(msg);
       const store = new SessionStore(workspaceRoot, msg.sessionId, SERVER_VERSION);
       await store.init();
-      const orch = new Orchestrator({ workspaceRoot, sessionId: msg.sessionId });
+      const demoGating =
+        msg.type === 'INIT' &&
+        typeof (msg.payload as any)?.client?.name === 'string' &&
+        String((msg.payload as any).client.name) === 'gt-runner';
+
+      const orch = new Orchestrator({ workspaceRoot, sessionId: msg.sessionId, demoGating });
       active = { sessionId: msg.sessionId, workspaceRoot, store, orch };
 
       await send({ type: 'STATUS', sessionId: active.sessionId, payload: { state: 'IDLE', detail: 'Session initialized' } });

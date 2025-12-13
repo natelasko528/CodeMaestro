@@ -28,6 +28,11 @@ export interface OrchestratorOutputs {
 export interface OrchestratorConfig {
   workspaceRoot: string;
   sessionId: string;
+  /**
+   * If true, the orchestrator will intentionally demonstrate GT-004:
+   * introduce a failing test, block completion, propose a fix, rerun tests.
+   */
+  demoGating?: boolean;
 }
 
 /**
@@ -38,8 +43,14 @@ export interface OrchestratorConfig {
  */
 export class Orchestrator {
   private state: OrchestratorState = 'IDLE';
+  private demoGatingEnabled: boolean;
+  private demoStage: 'none' | 'introducedFail' | 'fixed' = 'none';
+  private iterations = 0;
+  private readonly maxIterations = 2;
 
-  constructor(private readonly cfg: OrchestratorConfig) {}
+  constructor(private readonly cfg: OrchestratorConfig) {
+    this.demoGatingEnabled = !!cfg.demoGating;
+  }
 
   getState(): OrchestratorState {
     return this.state;
@@ -47,6 +58,8 @@ export class Orchestrator {
 
   async onUserPrompt(text: string): Promise<OrchestratorOutputs[]> {
     const outs: OrchestratorOutputs[] = [];
+    // Fail-safe: allow prompting GT-004 explicitly even if the INIT client flag is missing.
+    if (text.includes('GT-004')) this.demoGatingEnabled = true;
 
     this.state = 'PLANNING';
     outs.push({
@@ -100,6 +113,27 @@ export class Orchestrator {
         coachText: 'PASS: checks are green. MVP loop satisfied for this session.',
         done: true,
       });
+    } else if (this.demoGatingEnabled && this.demoStage === 'introducedFail' && this.iterations < this.maxIterations) {
+      this.iterations += 1;
+      // Coach must explicitly block completion and require a fix (GT-004).
+      outs.push({
+        state: 'VERIFYING',
+        coachText:
+          'FAIL: `npm test` is red.\n\nRequired fix:\n- Update `server/src/__tests__/gt004-demo.test.ts` so it passes (change the failing expectation).\n\nI will request a follow-up patch now.',
+        failReason: 'Tool command failed (GT-004 demo)',
+      });
+
+      // Player proposes a fix patch.
+      this.state = 'BUILDING';
+      this.demoStage = 'fixed';
+      outs.push({
+        state: this.state,
+        playerText: 'Fixing the failing GT-004 demo test and re-running checks.',
+        proposeEdits: [makeGt004TestEdit({ passing: true })],
+      });
+
+      this.state = 'WAITING_FOR_APPLY';
+      outs.push({ state: this.state });
     } else {
       this.state = 'FAILED';
       outs.push({
@@ -140,13 +174,30 @@ export class Orchestrator {
     void (await readTextIfExists(resolveInside(this.cfg.workspaceRoot, fileA)));
     void (await readTextIfExists(resolveInside(this.cfg.workspaceRoot, fileB)));
 
-    return [
+    const baseEdits: ProposedEdit[] = [
       { filePath: fileA, newText: textA, summary: 'Write scratch note A (deterministic multi-file apply)' },
       { filePath: fileB, newText: textB, summary: 'Write scratch note B (deterministic multi-file apply)' },
     ];
+
+    if (this.demoGatingEnabled && this.demoStage === 'none') {
+      // GT-004 demo: intentionally introduce a failing test on the first cycle.
+      this.demoStage = 'introducedFail';
+      baseEdits.push(makeGt004TestEdit({ passing: false }));
+    }
+
+    return baseEdits;
   }
 }
 
 function sha256(text: string): string {
   return crypto.createHash('sha256').update(text).digest('hex');
+}
+
+function makeGt004TestEdit(params: { passing: boolean }): ProposedEdit {
+  const filePath = 'server/src/__tests__/gt004-demo.test.ts';
+  const newText = params.passing
+    ? `describe('GT-004 demo', () => {\n  test('fixed: this test now passes', () => {\n    expect(1).toBe(1);\n  });\n});\n`
+    : `describe('GT-004 demo', () => {\n  test('intentional failure to prove coach gating', () => {\n    expect(1).toBe(2);\n  });\n});\n`;
+
+  return { filePath, newText, summary: params.passing ? 'Fix GT-004 demo failing test' : 'Add GT-004 demo failing test' };
 }

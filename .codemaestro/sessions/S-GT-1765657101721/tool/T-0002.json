@@ -1,0 +1,10 @@
+{
+  "toolId": "T-0002",
+  "command": "npm test",
+  "cwd": "/workspace/server",
+  "exitCode": 1,
+  "stdout": "\n> codemaestro-server@0.1.0 test\n> node --experimental-vm-modules node_modules/jest/bin/jest.js\n\n",
+  "stderr": "(node:11222) ExperimentalWarning: VM Modules is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\n(node:11220) ExperimentalWarning: VM Modules is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nFAIL src/__tests__/gt004-demo.test.ts\n  ● GT-004 demo › intentional failure to prove coach gating\n\n    expect(received).toBe(expected) // Object.is equality\n\n    Expected: 2\n    Received: 1\n\n      1 | describe('GT-004 demo', () => {\n      2 |   test('intentional failure to prove coach gating', () => {\n    > 3 |     expect(1).toBe(2);\n        |               ^\n      4 |   });\n      5 | });\n      6 |\n\n      at Object.<anonymous> (src/__tests__/gt004-demo.test.ts:3:15)\n\nPASS src/__tests__/sessionStore.test.ts\n(node:11221) ExperimentalWarning: VM Modules is an experimental feature and might change at any time\n(Use `node --trace-warnings ...` to show where the warning was created)\nPASS src/__tests__/validate.test.ts\nPASS src/__tests__/replay.test.ts\nPASS src/__tests__/allowlist.test.ts\n\nTest Suites: 1 failed, 4 passed, 5 total\nTests:       1 failed, 8 passed, 9 total\nSnapshots:   0 total\nTime:        1.721 s, estimated 2 s\nRan all test suites.\n",
+  "startedAt": "2025-12-13T20:18:23.975Z",
+  "endedAt": "2025-12-13T20:18:26.062Z"
+}

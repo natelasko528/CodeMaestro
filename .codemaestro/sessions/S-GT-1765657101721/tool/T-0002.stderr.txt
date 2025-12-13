@@ -1,0 +1,34 @@
+(node:11222) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:11220) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+FAIL src/__tests__/gt004-demo.test.ts
+  ● GT-004 demo › intentional failure to prove coach gating
+
+    expect(received).toBe(expected) // Object.is equality
+
+    Expected: 2
+    Received: 1
+
+      1 | describe('GT-004 demo', () => {
+      2 |   test('intentional failure to prove coach gating', () => {
+    > 3 |     expect(1).toBe(2);
+        |               ^
+      4 |   });
+      5 | });
+      6 |
+
+      at Object.<anonymous> (src/__tests__/gt004-demo.test.ts:3:15)
+
+PASS src/__tests__/sessionStore.test.ts
+(node:11221) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/__tests__/validate.test.ts
+PASS src/__tests__/replay.test.ts
+PASS src/__tests__/allowlist.test.ts
+
+Test Suites: 1 failed, 4 passed, 5 total
+Tests:       1 failed, 8 passed, 9 total
+Snapshots:   0 total
+Time:        1.721 s, estimated 2 s
+Ran all test suites.

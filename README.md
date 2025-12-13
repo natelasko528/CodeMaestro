@@ -109,6 +109,38 @@ CodeMaestro/
 - Git for version control
 - Code editor (VSCode recommended)
 
+## MVP: Run + Test (Local)
+
+### 1) Build + test server
+
+```sh
+cd server
+npm install
+npm run build
+npm test
+npm run gt
+```
+
+This writes `MVP_REPORT.md` and session artifacts under `.codemaestro/sessions/<sessionId>/`.
+
+### 2) Build + test extension package
+
+```sh
+cd extension
+npm install
+npm run build
+npm test
+```
+
+### 3) Try the VS Code extension (interactive)
+
+- Open the folder `extension/` in VS Code
+- Press **F5** using the launch config `Run CodeMaestro Extension (MVP)`
+- In the Extension Host window, run:
+  - `CodeMaestro: Start Session`
+  - `CodeMaestro: Open Chat`
+  - Send any prompt → you should see a multi-file proposal, preview diffs, Apply, and tool output
+
 ### Workflow
 1. Define requirements in numbered spec files
 2. Configure agent settings in `07-AGENT-CONFIG.md`

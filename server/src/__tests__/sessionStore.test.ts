@@ -21,4 +21,23 @@ describe('SessionStore', () => {
     const summary = await fs.readFile(path.join(sessionRoot, 'summary.md'), 'utf8');
     expect(summary).toContain('# Summary');
   });
+
+  test('redacts sensitive fields on write', async () => {
+    const root = await fs.mkdtemp(path.join(os.tmpdir(), 'codemaestro-'));
+    const store = new SessionStore(root, 'S-redact', 'test');
+    await store.init();
+
+    await store.appendEvent({
+      direction: 'in',
+      type: 'INIT',
+      sessionId: 'S-redact',
+      payload: { token: 'SUPER_SECRET', nested: { apiKey: 'ALSO_SECRET' } },
+    });
+
+    const sessionRoot = path.join(root, '.codemaestro', 'sessions', 'S-redact');
+    const events = await fs.readFile(path.join(sessionRoot, 'events.jsonl'), 'utf8');
+    expect(events).toContain('[REDACTED]');
+    expect(events).not.toContain('SUPER_SECRET');
+    expect(events).not.toContain('ALSO_SECRET');
+  });
 });

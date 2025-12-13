@@ -1,0 +1,6 @@
+CodeMaestro MVP
+Session: S-GT-1765656875638
+Stable: d081a78006620801e965f4fad9b2a79154846c157768e22f5a9ea6cb572d834e
+
+Prompt:
+Implement MVP wiring for protocol + diff proposal flow.

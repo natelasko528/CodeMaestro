@@ -1,0 +1,16 @@
+(node:9977) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+(node:9978) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/__tests__/allowlist.test.ts
+(node:9984) ExperimentalWarning: VM Modules is an experimental feature and might change at any time
+(Use `node --trace-warnings ...` to show where the warning was created)
+PASS src/__tests__/validate.test.ts
+PASS src/__tests__/sessionStore.test.ts
+PASS src/__tests__/replay.test.ts
+
+Test Suites: 4 passed, 4 total
+Tests:       8 passed, 8 total
+Snapshots:   0 total
+Time:        1.645 s, estimated 2 s
+Ran all test suites.

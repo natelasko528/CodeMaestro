@@ -1,0 +1,4 @@
+{"direction":"in","type":"INIT","sessionId":"S-smoke","payload":{"workspaceRoot":"/workspace","client":{"name":"smoke"}}}
+{"direction":"out","type":"STATUS","sessionId":"S-smoke","payload":{"state":"IDLE","detail":"Session initialized"}}
+{"direction":"out","type":"STATUS","sessionId":"S-smoke","payload":{"state":"IDLE","detail":"Session initialized"}}
+{"direction":"out","type":"STATUS","sessionId":"S-smoke","payload":{"state":"IDLE","detail":"Session initialized"}}

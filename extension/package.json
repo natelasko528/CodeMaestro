@@ -1,0 +1,60 @@
+{
+  "name": "codemaestro-extension",
+  "displayName": "CodeMaestro",
+  "description": "CodeMaestro MVP VS Code wrapper",
+  "version": "0.1.0",
+  "publisher": "codemaestro",
+  "engines": {
+    "vscode": "^1.90.0"
+  },
+  "categories": ["Other"],
+  "main": "./dist/extension.js",
+  "activationEvents": [
+    "onCommand:codemaestro.openChat",
+    "onCommand:codemaestro.startSession",
+    "onCommand:codemaestro.setProviderKey",
+    "onCommand:codemaestro.clearProviderKey"
+  ],
+  "contributes": {
+    "commands": [
+      {
+        "command": "codemaestro.openChat",
+        "title": "CodeMaestro: Open Chat"
+      },
+      {
+        "command": "codemaestro.startSession",
+        "title": "CodeMaestro: Start Session"
+      },
+      {
+        "command": "codemaestro.setProviderKey",
+        "title": "CodeMaestro: Set Provider API Key"
+      },
+      {
+        "command": "codemaestro.clearProviderKey",
+        "title": "CodeMaestro: Clear Provider API Key"
+      }
+    ]
+  },
+  "scripts": {
+    "build": "tsc -p .",
+    "watch": "tsc -p . -w",
+    "test": "node node_modules/jest/bin/jest.js",
+    "lint": "eslint src --ext .ts",
+    "clean": "rm -rf dist"
+  },
+  "dependencies": {
+    "uuid": "^9.0.0"
+  },
+  "devDependencies": {
+    "@types/jest": "^29.5.0",
+    "@types/node": "^20.0.0",
+    "@types/uuid": "^9.0.0",
+    "@types/vscode": "^1.90.0",
+    "@typescript-eslint/eslint-plugin": "^6.0.0",
+    "@typescript-eslint/parser": "^6.0.0",
+    "eslint": "^8.0.0",
+    "jest": "^29.5.0",
+    "ts-jest": "^29.1.0",
+    "typescript": "^5.0.0"
+  }
+}

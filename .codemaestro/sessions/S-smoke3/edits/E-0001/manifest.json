@@ -1,0 +1,15 @@
+{
+  "editId": "E-0001",
+  "files": [
+    {
+      "filePath": ".codemaestro/scratch/S-smoke3/note-a.txt",
+      "beforeHash": null,
+      "afterHash": "2458b85d5a386e1b83d8e77a1657d86bdfa4618d1c9b7cedadc5ed212e1cb9d5"
+    },
+    {
+      "filePath": ".codemaestro/scratch/S-smoke3/note-b.txt",
+      "beforeHash": null,
+      "afterHash": "b612871ca0c6e4fabb65ef6dba2cfb0e0239f360564b5a5a4ea4d59b16a7d066"
+    }
+  ]
+}

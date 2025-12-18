@@ -434,6 +434,87 @@ paths:
         "500":
           $ref: "#/components/responses/InternalServerError"
 
+  /api/provision/jobs/{id}/stream:
+    get:
+      summary: Stream job progress updates (SSE)
+      description: |
+        Server-Sent Events endpoint for real-time provisioning job updates.
+        Returns a continuous stream of job status and progress updates.
+        Connection remains open until job completion or client disconnection.
+      tags:
+        - Provisioning
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Job ID
+          example: "job_abc123xyz"
+      responses:
+        "200":
+          description: SSE stream established successfully
+          content:
+            text/event-stream:
+              schema:
+                type: object
+                properties:
+                  event:
+                    type: string
+                    enum:
+                      - job_status
+                      - progress
+                      - step_update
+                      - error
+                      - completed
+                    description: Event type
+                  data:
+                    type: object
+                    description: Event data (varies by event type)
+                    additionalProperties: true
+                  id:
+                    type: string
+                    description: Event ID for ordering
+                  retry:
+                    type: integer
+                    description: Suggested retry interval in milliseconds
+              examples:
+                job_status_event:
+                  value: |
+                    event: job_status
+                    id: 1
+                    data: {"id":"job_abc123xyz","status":"processing","progress":25,"timestamp":"2024-12-18T10:15:30Z"}
+
+                progress_event:
+                  value: |
+                    event: progress
+                    id: 2
+                    data: {"progress":50,"timestamp":"2024-12-18T10:15:45Z"}
+
+                step_update_event:
+                  value: |
+                    event: step_update
+                    id: 3
+                    data: {"step":"snapshot_selection","status":"completed","message":"AI selected snapshot with 92% confidence","timestamp":"2024-12-18T10:16:00Z"}
+
+                completion_event:
+                  value: |
+                    event: completed
+                    id: 4
+                    data: {"id":"job_abc123xyz","status":"completed","subAccountId":"sub_acc_456def","progress":100,"completedAt":"2024-12-18T10:20:00Z","timestamp":"2024-12-18T10:20:00Z"}
+
+                error_event:
+                  value: |
+                    event: error
+                    id: 5
+                    data: {"code":"SNAPSHOT_ERROR","message":"Failed to apply snapshot","timestamp":"2024-12-18T10:18:30Z"}
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
   /api/provision/jobs/{id}/retry:
     post:
       summary: Retry failed job
@@ -1199,6 +1280,159 @@ components:
       required:
         - code
         - message
+
+    SSEJobStatusEvent:
+      type: object
+      description: Server-Sent Event for job status updates
+      properties:
+        event:
+          type: string
+          enum: [job_status]
+          example: "job_status"
+        id:
+          type: string
+          description: Event sequence ID
+          example: "1"
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Job ID
+              example: "job_abc123xyz"
+            status:
+              type: string
+              enum: [pending, processing, completed, failed, cancelled]
+              example: "processing"
+            progress:
+              type: integer
+              minimum: 0
+              maximum: 100
+              example: 25
+            timestamp:
+              type: string
+              format: date-time
+
+    SSEProgressEvent:
+      type: object
+      description: Server-Sent Event for progress updates
+      properties:
+        event:
+          type: string
+          enum: [progress]
+          example: "progress"
+        id:
+          type: string
+          example: "2"
+        data:
+          type: object
+          properties:
+            progress:
+              type: integer
+              minimum: 0
+              maximum: 100
+              example: 50
+            timestamp:
+              type: string
+              format: date-time
+
+    SSEStepUpdateEvent:
+      type: object
+      description: Server-Sent Event for step execution updates
+      properties:
+        event:
+          type: string
+          enum: [step_update]
+          example: "step_update"
+        id:
+          type: string
+          example: "3"
+        data:
+          type: object
+          properties:
+            step:
+              type: string
+              description: Step identifier
+              example: "snapshot_selection"
+            status:
+              type: string
+              enum: [started, completed, failed]
+              example: "completed"
+            message:
+              type: string
+              example: "AI selected snapshot with 92% confidence"
+            details:
+              type: object
+              description: Step-specific details
+              additionalProperties: true
+            timestamp:
+              type: string
+              format: date-time
+
+    SSECompletedEvent:
+      type: object
+      description: Server-Sent Event for job completion
+      properties:
+        event:
+          type: string
+          enum: [completed]
+          example: "completed"
+        id:
+          type: string
+          example: "4"
+        data:
+          type: object
+          properties:
+            id:
+              type: string
+              description: Job ID
+              example: "job_abc123xyz"
+            status:
+              type: string
+              enum: [completed]
+              example: "completed"
+            subAccountId:
+              type: string
+              description: Created sub-account ID
+              example: "sub_acc_456def"
+            progress:
+              type: integer
+              example: 100
+            completedAt:
+              type: string
+              format: date-time
+            timestamp:
+              type: string
+              format: date-time
+
+    SSEErrorEvent:
+      type: object
+      description: Server-Sent Event for job errors
+      properties:
+        event:
+          type: string
+          enum: [error]
+          example: "error"
+        id:
+          type: string
+          example: "5"
+        data:
+          type: object
+          properties:
+            code:
+              type: string
+              description: Error code
+              example: "SNAPSHOT_ERROR"
+            message:
+              type: string
+              example: "Failed to apply snapshot"
+            details:
+              type: object
+              description: Error-specific details
+              additionalProperties: true
+            timestamp:
+              type: string
+              format: date-time
 
   responses:
     BadRequest:

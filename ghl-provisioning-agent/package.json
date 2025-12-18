@@ -1,0 +1,56 @@
+{
+  "name": "ghl-provisioning-agent",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "type-check": "tsc --noEmit",
+    "test": "vitest",
+    "test:coverage": "vitest --coverage",
+    "test:e2e": "playwright test",
+    "db:generate": "prisma generate",
+    "db:migrate": "prisma migrate dev",
+    "db:migrate:deploy": "prisma migrate deploy",
+    "db:studio": "prisma studio",
+    "db:seed": "tsx prisma/seed.ts"
+  },
+  "dependencies": {
+    "next": "14.2.15",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "@prisma/client": "^5.22.0",
+    "next-auth": "^5.0.0-beta.25",
+    "@auth/prisma-adapter": "^2.7.4",
+    "zod": "^3.23.8",
+    "openai": "^4.73.0",
+    "bcrypt": "^5.1.1",
+    "@types/bcrypt": "^5.0.2"
+  },
+  "devDependencies": {
+    "typescript": "^5.7.2",
+    "@types/node": "^22.10.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "prisma": "^5.22.0",
+    "vitest": "^2.1.6",
+    "@vitest/coverage-v8": "^2.1.6",
+    "msw": "^2.6.8",
+    "eslint": "^8.57.1",
+    "eslint-config-next": "14.2.15",
+    "prettier": "^3.4.2",
+    "tailwindcss": "^3.4.16",
+    "postcss": "^8.4.49",
+    "autoprefixer": "^10.4.20",
+    "@tailwindcss/typography": "^0.5.15",
+    "playwright": "^1.49.1",
+    "@playwright/test": "^1.49.1",
+    "tsx": "^4.19.2"
+  },
+  "engines": {
+    "node": ">=18.17.0",
+    "npm": ">=9.0.0"
+  }
+}

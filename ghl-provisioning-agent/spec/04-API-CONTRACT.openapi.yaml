@@ -1,0 +1,1259 @@
+openapi: 3.0.3
+info:
+  title: "GHL Provisioning Agent API"
+  version: "0.1.0"
+  description: |
+    RESTful API for the GHL Provisioning Agent Dashboard.
+    Enables automated sub-account provisioning with AI-powered snapshot selection and custom value mapping.
+  contact:
+    name: API Support
+    email: support@ghl-provisioning.com
+
+servers:
+  - url: http://localhost:3000
+    description: Local development server
+  - url: https://api.ghl-provisioning.com
+    description: Production server
+
+security:
+  - bearerAuth: []
+
+paths:
+  /health:
+    get:
+      summary: Health check
+      tags:
+        - System
+      security: []
+      responses:
+        "200":
+          description: Service is healthy
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  status:
+                    type: string
+                    example: "healthy"
+                  timestamp:
+                    type: string
+                    format: date-time
+                  version:
+                    type: string
+                    example: "0.1.0"
+
+  # Authentication Endpoints
+  /api/auth/ghl/connect:
+    post:
+      summary: Initiate GHL OAuth flow
+      description: Generates OAuth authorization URL for GoHighLevel integration
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                redirectUri:
+                  type: string
+                  format: uri
+                  description: Callback URL after OAuth completion
+                  example: "https://app.ghl-provisioning.com/callback"
+                state:
+                  type: string
+                  description: Optional state parameter for CSRF protection
+                  example: "random-state-string-123"
+              required:
+                - redirectUri
+      responses:
+        "200":
+          description: OAuth URL generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  authUrl:
+                    type: string
+                    format: uri
+                    example: "https://marketplace.gohighlevel.com/oauth/chooselocation?..."
+                  state:
+                    type: string
+                    example: "random-state-string-123"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/auth/ghl/callback:
+    post:
+      summary: Handle GHL OAuth callback
+      description: Processes OAuth callback and exchanges code for access tokens
+      tags:
+        - Authentication
+      security: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                code:
+                  type: string
+                  description: Authorization code from GHL
+                  example: "auth_code_abc123"
+                state:
+                  type: string
+                  description: State parameter for validation
+                  example: "random-state-string-123"
+              required:
+                - code
+      responses:
+        "200":
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  accessToken:
+                    type: string
+                    description: JWT access token for API authentication
+                    example: "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9..."
+                  agency:
+                    $ref: "#/components/schemas/Agency"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Agency Management Endpoints
+  /api/agencies:
+    get:
+      summary: List connected agencies
+      description: Retrieves all agencies connected to the authenticated user
+      tags:
+        - Agency Management
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+          description: Page number for pagination
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+          description: Number of items per page
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by agency name or email
+      responses:
+        "200":
+          description: List of agencies retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  agencies:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Agency"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/agencies/{id}:
+    get:
+      summary: Get agency details
+      description: Retrieves detailed information for a specific agency
+      tags:
+        - Agency Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agency ID
+          example: "agency_123abc"
+      responses:
+        "200":
+          description: Agency details retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyDetails"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+    put:
+      summary: Update agency settings
+      description: Updates configuration settings for an agency
+      tags:
+        - Agency Management
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Agency ID
+          example: "agency_123abc"
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                name:
+                  type: string
+                  example: "Acme Marketing Agency"
+                settings:
+                  type: object
+                  properties:
+                    autoProvisioningEnabled:
+                      type: boolean
+                      example: true
+                    defaultSnapshotId:
+                      type: string
+                      example: "snapshot_xyz789"
+                    notificationEmail:
+                      type: string
+                      format: email
+                      example: "admin@acmeagency.com"
+                    webhookUrl:
+                      type: string
+                      format: uri
+                      example: "https://acmeagency.com/webhook"
+      responses:
+        "200":
+          description: Agency updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AgencyDetails"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Provisioning Endpoints
+  /api/provision:
+    post:
+      summary: Create new sub-account
+      description: |
+        Main provisioning endpoint. Creates a new GHL sub-account with AI-powered
+        snapshot selection and custom value mapping from intake data.
+      tags:
+        - Provisioning
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ProvisionRequest"
+      responses:
+        "202":
+          description: Provisioning job created and processing
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  jobId:
+                    type: string
+                    example: "job_abc123xyz"
+                  status:
+                    type: string
+                    enum: [pending, processing, completed, failed]
+                    example: "processing"
+                  message:
+                    type: string
+                    example: "Provisioning job created successfully"
+                  estimatedCompletionTime:
+                    type: string
+                    format: date-time
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Validation error in intake data
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: "VALIDATION_ERROR"
+                message: "Invalid intake data format"
+                details:
+                  - field: "businessName"
+                    error: "Business name is required"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/provision/jobs:
+    get:
+      summary: List provisioning jobs
+      description: Retrieves all provisioning jobs with optional filtering
+      tags:
+        - Provisioning
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [pending, processing, completed, failed, cancelled]
+          description: Filter by job status
+        - name: agencyId
+          in: query
+          schema:
+            type: string
+          description: Filter by agency ID
+        - name: startDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter jobs created after this date
+        - name: endDate
+          in: query
+          schema:
+            type: string
+            format: date-time
+          description: Filter jobs created before this date
+      responses:
+        "200":
+          description: Provisioning jobs retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  jobs:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/ProvisionJob"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+                  summary:
+                    type: object
+                    properties:
+                      total:
+                        type: integer
+                        example: 150
+                      pending:
+                        type: integer
+                        example: 5
+                      processing:
+                        type: integer
+                        example: 3
+                      completed:
+                        type: integer
+                        example: 140
+                      failed:
+                        type: integer
+                        example: 2
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/provision/jobs/{id}:
+    get:
+      summary: Get job status
+      description: Retrieves detailed status and progress information for a provisioning job
+      tags:
+        - Provisioning
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Job ID
+          example: "job_abc123xyz"
+      responses:
+        "200":
+          description: Job status retrieved successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ProvisionJobDetails"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/provision/jobs/{id}/retry:
+    post:
+      summary: Retry failed job
+      description: Attempts to retry a failed provisioning job
+      tags:
+        - Provisioning
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: string
+          description: Job ID
+          example: "job_abc123xyz"
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                overrideData:
+                  type: object
+                  description: Optional data to override from original request
+                  properties:
+                    snapshotId:
+                      type: string
+                    customValues:
+                      type: object
+                      additionalProperties: true
+      responses:
+        "200":
+          description: Job retry initiated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  jobId:
+                    type: string
+                    example: "job_abc123xyz"
+                  status:
+                    type: string
+                    example: "processing"
+                  message:
+                    type: string
+                    example: "Job retry initiated"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          $ref: "#/components/responses/NotFound"
+        "409":
+          description: Conflict - Job is not in a retriable state
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: "INVALID_JOB_STATE"
+                message: "Job cannot be retried in current state: completed"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Snapshots Endpoints
+  /api/snapshots:
+    get:
+      summary: List available snapshots
+      description: Retrieves all snapshots available for the authenticated agency
+      tags:
+        - Snapshots
+      parameters:
+        - name: page
+          in: query
+          schema:
+            type: integer
+            default: 1
+            minimum: 1
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            default: 20
+            minimum: 1
+            maximum: 100
+        - name: search
+          in: query
+          schema:
+            type: string
+          description: Search by snapshot name or tags
+        - name: category
+          in: query
+          schema:
+            type: string
+          description: Filter by category (e.g., "real-estate", "automotive")
+      responses:
+        "200":
+          description: Snapshots retrieved successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  snapshots:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/Snapshot"
+                  pagination:
+                    $ref: "#/components/schemas/Pagination"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/snapshots/sync:
+    post:
+      summary: Sync snapshots from GHL
+      description: Fetches and synchronizes the latest snapshots from GoHighLevel
+      tags:
+        - Snapshots
+      requestBody:
+        required: false
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                force:
+                  type: boolean
+                  description: Force full sync even if recently synced
+                  default: false
+      responses:
+        "200":
+          description: Sync completed successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  success:
+                    type: boolean
+                    example: true
+                  snapshotsSynced:
+                    type: integer
+                    example: 15
+                  newSnapshots:
+                    type: integer
+                    example: 3
+                  updatedSnapshots:
+                    type: integer
+                    example: 12
+                  lastSyncAt:
+                    type: string
+                    format: date-time
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "429":
+          description: Too many sync requests
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: "RATE_LIMIT_EXCEEDED"
+                message: "Sync can only be performed once per hour"
+                retryAfter: 1800
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  /api/snapshots/select:
+    post:
+      summary: AI-powered snapshot selection
+      description: |
+        Uses AI to analyze intake data and recommend the most appropriate snapshot.
+        Returns ranked snapshot recommendations with confidence scores and reasoning.
+      tags:
+        - Snapshots
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intakeData:
+                  type: object
+                  description: Business intake form data for analysis
+                  additionalProperties: true
+                  example:
+                    businessName: "Sunset Realty"
+                    industry: "Real Estate"
+                    services: ["Residential Sales", "Property Management"]
+                    targetMarket: "Luxury homes in coastal areas"
+                    estimatedLeads: 50
+                availableSnapshots:
+                  type: array
+                  description: Optional list of snapshot IDs to consider (defaults to all)
+                  items:
+                    type: string
+                  example: ["snapshot_1", "snapshot_2"]
+              required:
+                - intakeData
+      responses:
+        "200":
+          description: Snapshot recommendations generated successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  recommendations:
+                    type: array
+                    items:
+                      $ref: "#/components/schemas/SnapshotRecommendation"
+                  analysisMetadata:
+                    type: object
+                    properties:
+                      modelVersion:
+                        type: string
+                        example: "gpt-4-turbo"
+                      processingTime:
+                        type: number
+                        description: Processing time in milliseconds
+                        example: 1250
+                      confidence:
+                        type: string
+                        enum: [high, medium, low]
+                        example: "high"
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "422":
+          description: Insufficient data for analysis
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: "INSUFFICIENT_DATA"
+                message: "Intake data does not contain enough information for analysis"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+  # Custom Values Endpoints
+  /api/custom-values/map:
+    post:
+      summary: Map intake data to custom values
+      description: |
+        Uses AI to intelligently map intake form data to GHL custom field values.
+        Analyzes field names, data types, and content to create accurate mappings.
+      tags:
+        - Custom Values
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                intakeData:
+                  type: object
+                  description: Raw intake form data
+                  additionalProperties: true
+                  example:
+                    company_name: "Sunset Realty"
+                    phone_number: "+1-555-123-4567"
+                    business_type: "Real Estate Agency"
+                    monthly_budget: "$5,000"
+                    contact_email: "info@sunsetrealty.com"
+                snapshotId:
+                  type: string
+                  description: Target snapshot ID with custom field definitions
+                  example: "snapshot_xyz789"
+                customFields:
+                  type: array
+                  description: Optional explicit custom field definitions
+                  items:
+                    type: object
+                    properties:
+                      fieldId:
+                        type: string
+                      fieldName:
+                        type: string
+                      fieldType:
+                        type: string
+                        enum: [text, number, date, email, phone, url, dropdown, checkbox]
+                      required:
+                        type: boolean
+              required:
+                - intakeData
+                - snapshotId
+      responses:
+        "200":
+          description: Custom values mapped successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  mappedValues:
+                    type: object
+                    additionalProperties: true
+                    example:
+                      business_name: "Sunset Realty"
+                      phone: "+15551234567"
+                      industry: "Real Estate"
+                      monthly_budget: 5000
+                      email: "info@sunsetrealty.com"
+                  mappingDetails:
+                    type: array
+                    items:
+                      type: object
+                      properties:
+                        sourceField:
+                          type: string
+                          example: "company_name"
+                        targetField:
+                          type: string
+                          example: "business_name"
+                        transformation:
+                          type: string
+                          example: "direct_copy"
+                        confidence:
+                          type: number
+                          format: float
+                          minimum: 0
+                          maximum: 1
+                          example: 0.95
+                  unmappedFields:
+                    type: array
+                    description: Intake fields that couldn't be mapped
+                    items:
+                      type: string
+                    example: ["internal_notes"]
+                  missingRequiredFields:
+                    type: array
+                    description: Required custom fields with no mapped value
+                    items:
+                      type: string
+                    example: ["tax_id"]
+        "400":
+          $ref: "#/components/responses/BadRequest"
+        "401":
+          $ref: "#/components/responses/Unauthorized"
+        "404":
+          description: Snapshot not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Error"
+              example:
+                code: "SNAPSHOT_NOT_FOUND"
+                message: "Snapshot with ID 'snapshot_xyz789' not found"
+        "500":
+          $ref: "#/components/responses/InternalServerError"
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: JWT token obtained from OAuth callback
+
+  schemas:
+    Agency:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "agency_123abc"
+        name:
+          type: string
+          example: "Acme Marketing Agency"
+        ghlLocationId:
+          type: string
+          example: "loc_xyz789"
+        email:
+          type: string
+          format: email
+          example: "admin@acmeagency.com"
+        connectedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [active, suspended, disconnected]
+          example: "active"
+      required:
+        - id
+        - name
+        - ghlLocationId
+        - email
+        - connectedAt
+        - status
+
+    AgencyDetails:
+      allOf:
+        - $ref: "#/components/schemas/Agency"
+        - type: object
+          properties:
+            settings:
+              type: object
+              properties:
+                autoProvisioningEnabled:
+                  type: boolean
+                  example: true
+                defaultSnapshotId:
+                  type: string
+                  example: "snapshot_xyz789"
+                notificationEmail:
+                  type: string
+                  format: email
+                  example: "notifications@acmeagency.com"
+                webhookUrl:
+                  type: string
+                  format: uri
+                  example: "https://acmeagency.com/webhook"
+            statistics:
+              type: object
+              properties:
+                totalSubAccounts:
+                  type: integer
+                  example: 45
+                activeProvisioningJobs:
+                  type: integer
+                  example: 3
+                failedJobsLast30Days:
+                  type: integer
+                  example: 2
+                lastProvisionedAt:
+                  type: string
+                  format: date-time
+            ghlTokens:
+              type: object
+              properties:
+                hasAccessToken:
+                  type: boolean
+                  example: true
+                hasRefreshToken:
+                  type: boolean
+                  example: true
+                expiresAt:
+                  type: string
+                  format: date-time
+
+    ProvisionRequest:
+      type: object
+      properties:
+        agencyId:
+          type: string
+          description: Agency ID for the sub-account
+          example: "agency_123abc"
+        intakeData:
+          type: object
+          description: Business intake form data
+          additionalProperties: true
+          example:
+            businessName: "Sunset Realty"
+            contactName: "John Smith"
+            email: "john@sunsetrealty.com"
+            phone: "+1-555-123-4567"
+            industry: "Real Estate"
+            services: ["Residential Sales", "Property Management"]
+            targetMarket: "Luxury coastal properties"
+            website: "https://sunsetrealty.com"
+            estimatedLeads: 50
+            monthlyBudget: "$5,000"
+        snapshotId:
+          type: string
+          description: Optional specific snapshot ID (will use AI selection if not provided)
+          example: "snapshot_xyz789"
+        customValues:
+          type: object
+          description: Optional manual custom field values (overrides AI mapping)
+          additionalProperties: true
+        options:
+          type: object
+          properties:
+            useAISnapshotSelection:
+              type: boolean
+              description: Use AI to select snapshot (default true if snapshotId not provided)
+              default: true
+            useAICustomValueMapping:
+              type: boolean
+              description: Use AI to map custom values (default true)
+              default: true
+            sendWelcomeEmail:
+              type: boolean
+              description: Send welcome email to new sub-account
+              default: true
+            webhookUrl:
+              type: string
+              format: uri
+              description: Custom webhook URL for job completion notification
+      required:
+        - agencyId
+        - intakeData
+
+    ProvisionJob:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "job_abc123xyz"
+        agencyId:
+          type: string
+          example: "agency_123abc"
+        status:
+          type: string
+          enum: [pending, processing, completed, failed, cancelled]
+          example: "processing"
+        progress:
+          type: integer
+          minimum: 0
+          maximum: 100
+          description: Completion percentage
+          example: 65
+        subAccountId:
+          type: string
+          description: GHL sub-account ID (available when completed)
+          example: "sub_acc_456def"
+          nullable: true
+        snapshotId:
+          type: string
+          example: "snapshot_xyz789"
+        snapshotName:
+          type: string
+          example: "Real Estate Pro Template"
+        businessName:
+          type: string
+          example: "Sunset Realty"
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        completedAt:
+          type: string
+          format: date-time
+          nullable: true
+        error:
+          type: string
+          description: Error message if status is failed
+          nullable: true
+      required:
+        - id
+        - agencyId
+        - status
+        - progress
+        - snapshotId
+        - businessName
+        - createdAt
+        - updatedAt
+
+    ProvisionJobDetails:
+      allOf:
+        - $ref: "#/components/schemas/ProvisionJob"
+        - type: object
+          properties:
+            intakeData:
+              type: object
+              additionalProperties: true
+              description: Original intake form data
+            mappedCustomValues:
+              type: object
+              additionalProperties: true
+              description: Custom values that were applied
+            timeline:
+              type: array
+              description: Detailed timeline of job execution
+              items:
+                type: object
+                properties:
+                  timestamp:
+                    type: string
+                    format: date-time
+                  step:
+                    type: string
+                    example: "snapshot_selection"
+                  status:
+                    type: string
+                    enum: [started, completed, failed]
+                    example: "completed"
+                  message:
+                    type: string
+                    example: "AI selected snapshot 'Real Estate Pro' with 95% confidence"
+                  details:
+                    type: object
+                    additionalProperties: true
+            retryCount:
+              type: integer
+              description: Number of retry attempts
+              example: 0
+            canRetry:
+              type: boolean
+              description: Whether the job can be retried
+              example: true
+
+    Snapshot:
+      type: object
+      properties:
+        id:
+          type: string
+          example: "snapshot_xyz789"
+        name:
+          type: string
+          example: "Real Estate Pro Template"
+        description:
+          type: string
+          example: "Complete CRM setup for real estate agencies with automated lead nurturing"
+        category:
+          type: string
+          example: "real-estate"
+        tags:
+          type: array
+          items:
+            type: string
+          example: ["real-estate", "crm", "automation", "lead-gen"]
+        features:
+          type: array
+          items:
+            type: string
+          example:
+            - "Pre-built funnels"
+            - "Email templates"
+            - "SMS campaigns"
+            - "Custom fields"
+        customFieldsCount:
+          type: integer
+          example: 25
+        thumbnailUrl:
+          type: string
+          format: uri
+          example: "https://storage.ghl.com/snapshots/thumb_xyz.jpg"
+          nullable: true
+        isPublic:
+          type: boolean
+          example: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        usageCount:
+          type: integer
+          description: Number of times this snapshot has been used
+          example: 127
+      required:
+        - id
+        - name
+        - category
+        - tags
+        - customFieldsCount
+        - isPublic
+        - createdAt
+        - updatedAt
+
+    SnapshotRecommendation:
+      type: object
+      properties:
+        snapshotId:
+          type: string
+          example: "snapshot_xyz789"
+        snapshotName:
+          type: string
+          example: "Real Estate Pro Template"
+        rank:
+          type: integer
+          description: Ranking position (1 is best match)
+          example: 1
+        confidenceScore:
+          type: number
+          format: float
+          minimum: 0
+          maximum: 1
+          description: AI confidence score for this recommendation
+          example: 0.92
+        reasoning:
+          type: string
+          example: "This snapshot is ideal for real estate businesses with lead generation focus. It includes property listing automation and client nurturing workflows that align with the business requirements."
+        matchedFeatures:
+          type: array
+          description: Features that matched the intake data
+          items:
+            type: string
+          example:
+            - "Real estate specific workflows"
+            - "Lead nurturing automation"
+            - "Property listing management"
+        snapshot:
+          $ref: "#/components/schemas/Snapshot"
+      required:
+        - snapshotId
+        - snapshotName
+        - rank
+        - confidenceScore
+        - reasoning
+        - matchedFeatures
+        - snapshot
+
+    Pagination:
+      type: object
+      properties:
+        page:
+          type: integer
+          example: 1
+        limit:
+          type: integer
+          example: 20
+        totalPages:
+          type: integer
+          example: 5
+        totalItems:
+          type: integer
+          example: 95
+        hasNext:
+          type: boolean
+          example: true
+        hasPrev:
+          type: boolean
+          example: false
+      required:
+        - page
+        - limit
+        - totalPages
+        - totalItems
+        - hasNext
+        - hasPrev
+
+    Error:
+      type: object
+      properties:
+        code:
+          type: string
+          description: Machine-readable error code
+          example: "VALIDATION_ERROR"
+        message:
+          type: string
+          description: Human-readable error message
+          example: "Invalid request parameters"
+        details:
+          type: array
+          description: Detailed error information
+          items:
+            type: object
+            additionalProperties: true
+          nullable: true
+        timestamp:
+          type: string
+          format: date-time
+        path:
+          type: string
+          description: API path where error occurred
+          example: "/api/provision"
+      required:
+        - code
+        - message
+
+  responses:
+    BadRequest:
+      description: Bad request - Invalid input parameters
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: "BAD_REQUEST"
+            message: "Invalid request parameters"
+            details:
+              - field: "agencyId"
+                error: "Agency ID is required"
+
+    Unauthorized:
+      description: Unauthorized - Invalid or missing authentication token
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: "UNAUTHORIZED"
+            message: "Authentication required"
+
+    NotFound:
+      description: Resource not found
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: "NOT_FOUND"
+            message: "Resource not found"
+
+    InternalServerError:
+      description: Internal server error
+      content:
+        application/json:
+          schema:
+            $ref: "#/components/schemas/Error"
+          example:
+            code: "INTERNAL_SERVER_ERROR"
+            message: "An unexpected error occurred"
+
+tags:
+  - name: System
+    description: System health and status endpoints
+  - name: Authentication
+    description: GHL OAuth authentication endpoints
+  - name: Agency Management
+    description: Agency configuration and management
+  - name: Provisioning
+    description: Sub-account provisioning and job management
+  - name: Snapshots
+    description: Snapshot management and AI selection
+  - name: Custom Values
+    description: AI-powered custom value mapping

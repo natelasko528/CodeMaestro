@@ -1,0 +1,139 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// Enum types
+enum ProvisioningJobStatus {
+  PENDING
+  IN_PROGRESS
+  COMPLETED
+  FAILED
+  RETRYING
+}
+
+enum UserRole {
+  ADMIN
+  AGENCY_ADMIN
+  SUPPORT
+}
+
+enum ProvisioningStepStatus {
+  STARTED
+  COMPLETED
+  FAILED
+}
+
+// Agency table
+model Agency {
+  id                           String   @id @default(uuid())
+  name                         String   @db.VarChar(255)
+  ghlAgencyId                  String   @unique @map("ghl_agency_id") @db.VarChar(255)
+  oauthAccessTokenEncrypted    String   @map("oauth_access_token_encrypted") @db.Text
+  oauthRefreshTokenEncrypted   String   @map("oauth_refresh_token_encrypted") @db.Text
+  tokenExpiresAt               DateTime @map("token_expires_at") @db.Timestamp(6)
+  settingsJson                 Json?    @map("settings_json") @db.JsonB
+  createdAt                    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt                    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relations
+  snapshots                    Snapshot[]
+  provisioningJobs             ProvisioningJob[]
+
+  @@index([ghlAgencyId])
+  @@index([tokenExpiresAt])
+  @@index([createdAt])
+  @@map("agencies")
+}
+
+// Snapshot table
+model Snapshot {
+  id              String   @id @default(uuid())
+  agencyId        String   @map("agency_id")
+  ghlSnapshotId   String   @map("ghl_snapshot_id") @db.VarChar(255)
+  name            String   @db.VarChar(255)
+  niche           String?  @db.VarChar(255)
+  description     String?  @db.Text
+  isActive        Boolean  @default(true) @map("is_active")
+  createdAt       DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt       DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relations
+  agency          Agency   @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  provisioningJobs ProvisioningJob[]
+
+  @@unique([agencyId, ghlSnapshotId], name: "idx_snapshots_agency_ghl_id")
+  @@index([agencyId])
+  @@index([ghlSnapshotId])
+  @@index([isActive])
+  @@map("snapshots")
+}
+
+// ProvisioningJob table
+model ProvisioningJob {
+  id             String                 @id @default(uuid())
+  agencyId       String                 @map("agency_id")
+  status         ProvisioningJobStatus  @default(PENDING)
+  clientDataJson Json                   @map("client_data_json") @db.JsonB
+  snapshotId     String?                @map("snapshot_id")
+  locationId     String?                @map("location_id") @db.VarChar(255)
+  errorMessage   String?                @map("error_message") @db.Text
+  retryCount     Int                    @default(0) @map("retry_count")
+  createdAt      DateTime               @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt      DateTime               @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  // Relations
+  agency         Agency                 @relation(fields: [agencyId], references: [id], onDelete: Cascade)
+  snapshot       Snapshot?              @relation(fields: [snapshotId], references: [id], onDelete: SetNull)
+  logs           ProvisioningLog[]
+
+  @@index([agencyId])
+  @@index([status])
+  @@index([snapshotId])
+  @@index([createdAt])
+  @@index([updatedAt])
+  @@index([agencyId, status], name: "idx_provisioning_jobs_agency_status")
+  @@map("provisioning_jobs")
+}
+
+// ProvisioningLog table
+model ProvisioningLog {
+  id          String                   @id @default(uuid())
+  jobId       String                   @map("job_id")
+  timestamp   DateTime                 @default(now()) @db.Timestamp(6)
+  step        String                   @db.VarChar(255)
+  status      ProvisioningStepStatus
+  detailsJson Json?                    @map("details_json") @db.JsonB
+  createdAt   DateTime                 @default(now()) @map("created_at") @db.Timestamp(6)
+
+  // Relations
+  job         ProvisioningJob          @relation(fields: [jobId], references: [id], onDelete: Cascade)
+
+  @@index([jobId])
+  @@index([timestamp])
+  @@index([step])
+  @@index([jobId, timestamp(sort: Desc)], name: "idx_provisioning_logs_job_timestamp")
+  @@map("provisioning_logs")
+}
+
+// User table
+model User {
+  id           String   @id @default(uuid())
+  email        String   @unique @db.VarChar(255)
+  passwordHash String   @map("password_hash") @db.VarChar(255)
+  role         UserRole @default(AGENCY_ADMIN)
+  createdAt    DateTime @default(now()) @map("created_at") @db.Timestamp(6)
+  updatedAt    DateTime @updatedAt @map("updated_at") @db.Timestamp(6)
+
+  @@index([email])
+  @@index([role])
+  @@index([createdAt])
+  @@map("users")
+}

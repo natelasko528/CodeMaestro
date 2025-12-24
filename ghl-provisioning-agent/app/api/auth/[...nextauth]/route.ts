@@ -1,13 +1,7 @@
-import { NextRequest, NextResponse } from 'next/server';
 import NextAuth from 'next-auth';
 import { authConfig } from '@/lib/server/auth';
 
-const handler = NextAuth(authConfig);
+const { handlers } = NextAuth(authConfig);
 
-export async function GET(req: NextRequest) {
-  return handler(req as any) as Promise<NextResponse>;
-}
-
-export async function POST(req: NextRequest) {
-  return handler(req as any) as Promise<NextResponse>;
-}
+export const GET = handlers.GET;
+export const POST = handlers.POST;
